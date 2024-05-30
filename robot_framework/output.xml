@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.0 (Python 3.10.12 on linux)" generated="2024-05-26T18:03:14.846485" rpa="false" schemaversion="5">
+<suite id="s1" name="Robot Framework" source="/home/robotti/PycharmProjects/stockrobot/robot_framework">
+<suite id="s1-s1" name="Scripts" source="/home/robotti/PycharmProjects/stockrobot/robot_framework/scripts">
+<suite id="s1-s1-s1" name="Robot" source="/home/robotti/PycharmProjects/stockrobot/robot_framework/scripts/robot">
+<suite id="s1-s1-s1-s1" name="Regression" source="/home/robotti/PycharmProjects/stockrobot/robot_framework/scripts/robot/regression.robot">
+<kw name="Connect To Database" owner="DatabaseLibrary" type="SETUP">
+<msg time="2024-05-26T18:03:26.069030" level="INFO">Connecting using : pymysql.connect(db=stockrobot, user=robot, passwd=***, host=localhost, port=3306, charset=None)</msg>
+<arg>${DB_MODULE}</arg>
+<arg>${DB_NAME}</arg>
+<arg>${DB_USER}</arg>
+<arg>${DB_PASSWORD}</arg>
+<arg>${DB_HOST}</arg>
+<arg>${DB_PORT}</arg>
+<doc>Loads the DB API 2.0 module given ``dbapiModuleName`` then uses it to
+connect to the database using provided parameters such as ``dbName``, ``dbUsername``, and ``dbPassword``.</doc>
+<status status="PASS" start="2024-05-26T18:03:25.880563" elapsed="0.864443"/>
+</kw>
+<test id="s1-s1-s1-s1-t1" name="Find Interesting Stocks" line="144">
+<kw name="Open Browser" owner="SeleniumLibrary">
+<msg time="2024-05-26T18:03:26.750788" level="INFO">Opening browser 'firefox' to base url 'https://finance.yahoo.com/u/yahoo-finance/watchlists/most-active-penny-stocks/'.</msg>
+<arg>${PRIMARY_SOURCE_URL}</arg>
+<arg>${BROWSER}</arg>
+<doc>Opens a new browser instance to the optional ``url``.</doc>
+<status status="PASS" start="2024-05-26T18:03:26.749371" elapsed="58.448649"/>
+</kw>
+<doc>Finds stocks which match defined interests and registers them in database.</doc>
+<status status="PASS" start="2024-05-26T18:03:26.746044" elapsed="67.033920"/>
+</test>
+<kw name="Stop Automation Procedure" type="TEARDOWN">
+<kw name="Disconnect From Database" owner="DatabaseLibrary">
+<msg time="2024-05-26T18:04:40.612720" level="INFO">Executing : Disconnect From Database</msg>
+<doc>Disconnects from the database.</doc>
+<status status="PASS" start="2024-05-26T18:04:40.450347" elapsed="0.240945"/>
+</kw>
+<kw name="Close All Browsers" owner="SeleniumLibrary">
+<doc>Closes all open browsers and resets the browser cache.</doc>
+<status status="PASS" start="2024-05-26T18:04:40.919266" elapsed="7.245167"/>
+</kw>
+<doc>All keywords related to closing the automation should be placed here.</doc>
+<status status="PASS" start="2024-05-26T18:04:39.596811" elapsed="8.568050"/>
+</kw>
+<status status="PASS" start="2024-05-26T18:03:15.005883" elapsed="93.159181"/>
+</suite>
+<status status="PASS" start="2024-05-26T18:03:15.002967" elapsed="93.411809"/>
+</suite>
+<status status="PASS" start="2024-05-26T18:03:14.999583" elapsed="93.445625"/>
+</suite>
+<status status="PASS" start="2024-05-26T18:03:14.849336" elapsed="93.628021"/>
+</suite>
+<statistics>
+<total>
+<stat pass="1" fail="0" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat pass="1" fail="0" skip="0" id="s1" name="Robot Framework">Robot Framework</stat>
+<stat pass="1" fail="0" skip="0" id="s1-s1" name="Scripts">Robot Framework.Scripts</stat>
+<stat pass="1" fail="0" skip="0" id="s1-s1-s1" name="Robot">Robot Framework.Scripts.Robot</stat>
+<stat pass="1" fail="0" skip="0" id="s1-s1-s1-s1" name="Regression">Robot Framework.Scripts.Robot.Regression</stat>
+</suite>
+</statistics>
+<errors>
+<msg time="2024-05-26T18:03:14.838224" level="WARN">Error in file '/home/robotti/PycharmProjects/stockrobot/robot_framework/scripts/robot/regression.robot' on line 69: The '[Return]' setting is deprecated. Use the 'RETURN' statement instead.</msg>
+<msg time="2024-05-26T18:03:14.838811" level="WARN">Error in file '/home/robotti/PycharmProjects/stockrobot/robot_framework/scripts/robot/regression.robot' on line 75: The '[Return]' setting is deprecated. Use the 'RETURN' statement instead.</msg>
+<msg time="2024-05-26T18:03:14.839906" level="WARN">Error in file '/home/robotti/PycharmProjects/stockrobot/robot_framework/scripts/robot/regression.robot' on line 96: The '[Return]' setting is deprecated. Use the 'RETURN' statement instead.</msg>
+<msg time="2024-05-26T18:03:14.840312" level="WARN">Error in file '/home/robotti/PycharmProjects/stockrobot/robot_framework/scripts/robot/regression.robot' on line 100: The '[Return]' setting is deprecated. Use the 'RETURN' statement instead.</msg>
+</errors>
+</robot>
