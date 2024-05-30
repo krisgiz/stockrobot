@@ -8,7 +8,6 @@ Library     Process
 Library     DatabaseLibrary
 Library     Collections
 Library     ${CURDIR}//..//python//support_keywords.py
-#Library     ${CURDIR}${/}..${/}libraries//canvasEye_new.py
 Resource    interests.resource
 Resource    locators.resource
 
@@ -17,8 +16,7 @@ Resource    locators.resource
 ${BROWSER}=         firefox
 ${PRIMARY_SOURCE_URL}=     https://finance.yahoo.com/u/yahoo-finance/watchlists/most-active-penny-stocks/
 #https://finance.yahoo.com/quote/INSERT_STOCK_CODE_HERE
-${SECONDARY_SOURCE_URL}=   https://finance.yahoo.com/quote/
-${NEWS_SOURCE_URL}=     https://marketwatch.com/investing/stock/
+${NEWS_SOURCE_URL}=   https://finance.yahoo.com/quote/
 ${SEARCH_RESULTS_MAX}=      1
 ${DB_USER}=          robot
 ${DB_PASSWORD}=      SuperSalainen133##
@@ -46,7 +44,7 @@ Connect To Database Short
     Query   USE ${db_name}
 
 
-Initiate Database Setup
+#Initiate Database Setup
     #Note that prior to running this you need to setup the following information:
     #Note that this is assuming both mySQL and robot runs on the same device.
     #-You need to create user robot with the proper password.
@@ -56,20 +54,10 @@ Initiate Database Setup
     #-GRANT ALL PRIVILEGES ON stockrobot.* TO 'robot'@'localhost';
     #-FLUSH PRIVILEGES;
 
-
-    #This is run if no database exists
-    #This should contain two tables. One, following list
-    #The other one as a list keeping for data.
-    #First should have CODE, NAME, TYPE, STARTING_PRICE, DATE
-
-    #Second should have 2 tables.
-    #First is PK, CODE, NAME, TYPE, DATE
-    #Second is FK, PRICE, TIMESTAMP, NEWS TITLE, SENTIMENT
-
 Query Json
     [Arguments]     ${query}
     ${results}=     Query    ${query}
-    ${results}=       convert_database_output_to_json     ${results}
+    ${results}=       Convert Database Output To Json     ${results}
     ${results}=       String To Json      ${results}
     [Return]        ${results}
 
@@ -96,30 +84,15 @@ Clear All Database Tables
         Play Sound File      ${CURDIR}//..//..//sounds//clearing_database.wav       ${PLAY_SOUNDS}
     END
 
-Verify If Price Is Right
-    [Documentation]     Verifies if price is within acceptable limitations (blow threshold)
-    [Return]        True
-
-Verify If Trading Volume Is Acceptable
-    [Documentation]     Verifies if the trading volume is acceptable
-    [Return]        True
-
 Verify If Is Best Possible News
     [Documentation]     This should succeed only if the news are best possible. Ie. oncology company starts trials for a medicine.
     Play Sound File      ${CURDIR}//..//..//sounds//big_win.mp3     ${PLAY_SOUNDS}
-
-Verify If Is Good News
-    [Documentation]     This should succeed if news are good. It simply registers the news as good news.
-
-
-Verify If Is Bad News
-    [Documentation]     This should succeed if news are bad. It simply registers the news as bad news.
 
 Test That Relations Work
     [Documentation]     This tests that relations actually work. You should run this prior to anything. If it fails, give up.
     ${test_text}=   Set Variable     Python is a great programming language for data science.
     ${test_list}=        Create List     programming     cooking     driving
-    ${result}=      is_text_related_to_keywords   ${test_text}     ${test_list}
+    ${result}=      Is Text Related To Keywords   ${test_text}     ${test_list}
     IF  ${result} == False
         Fail        Relation testing does not work as intended.
     END
@@ -139,8 +112,7 @@ Yahoo Consent Checking Resolver
             Wait Until Element Is Visible   ${reject_consent_button}
             Click Element    ${reject_consent_button}
             Wait Until Element Is Not Visible    ${consent_modal}
-    END     
-
+    END
 
 Yahoo Find Interesting Stocks
     [Documentation]     This creates a list of symbols which to inspect further.
@@ -163,10 +135,10 @@ Yahoo Find Interesting Stocks
     #Once data is in list, print them for debugging purposes and visit each page.
     FOR     ${symbol}       IN      @{symbol_list}
         Log To Console  Inspecting stock ${symbol}
-        Go To    ${SECONDARY_SOURCE_URL}${symbol}
+        Go To    ${NEWS_SOURCE_URL}${symbol}
         Sleep   1s
         ${stock_description}=       Get Text    ${data_stock_type_for_relatio_check}
-        ${is_interesting}=      is_text_related_to_keywords     ${stock_description}     ${INTERESTS_LIST}
+        ${is_interesting}=      Is Text Related To Keywords     ${stock_description}     ${INTERESTS_LIST}
         IF      ${is_interesting} == True
             Log To Console    THIS STOCK WAS INTERESTING: ${symbol}
             ${name}=        Get Text        ${data_stock_name_remove_Overview}
@@ -183,7 +155,7 @@ Insert Stock To Database
     [Documentation]     This inserts stock into the database
     [Arguments]     ${symbol}   ${type}     ${name}     ${price}
     #Make sure strings fit. Symbols are short so wont need to be truncated
-    ${name}=        truncate_string     ${name}     255
+    ${name}=        Truncate String     ${name}     255
     ${type}=        Truncate String     ${type}     50
     ${success}=     Run Keyword And Return Status      Execute Sql String   INSERT INTO ${SEARCH_DB} (SYMBOL, TYPE, NAME, PRICE, ADDED_TIME) VALUES ("${symbol}", "${type}", "${name}", ${price}, NOW());
     IF    ${success} == True
@@ -196,45 +168,44 @@ Test Inserting Stock To Database
     [Documentation]     Self-explanatory
     Insert Stock To Database        TST   Testing database     Test     4.000
 
-
 Print Out Interesting Stocks From Database
     [Documentation]     This prints stocks we've selected. This is a test.
     ${result}=      Query    SELECT * FROM ${SEARCH_DB}
     Log To Console      ${result}
     
-    
-Marketwatch Get News And Do Cycle
+Yahoo Get News For Stock
+    [Arguments]     ${SYMBOL}   ${StockID}
     [Documentation]     Goes to marketwatch and searches for news. Checks the first news title for information. If it's unique, it's added to database. If it's positive a sound will be made.
-    Go To   ${NEWS_SOURCE_URL}
+    Go To   ${NEWS_SOURCE_URL}${SYMBOL}
     #We always get the first news. The list of news is endless and most of it is junk.
-
     #First marketwatch news and wait for page reaction
-    Click Element   ${data_stock_news_marketwatch_tab}
     Sleep   0.5s
-    ${text}=        Get Text    ${data_stock_first_news}
-    ${result}=     Analyse Text Sentiment      ${SENTIMENT_MODEL_PATH}      ${text}
-    ${expected_result}=     Set Variable    neutral
-
-    #Register news regardless of their sentiment, but warn of good or bad news with sound effect.
-    IF  """${result}""" != "good"
-        Play Sound File      ${CURDIR}//..//..//sounds//big_win.wav       ${PLAY_SOUNDS}
-    ELSE IF     """${result}""" != "bad"
-        Play Sound File      ${CURDIR}//..//..//sounds//urgent.wav       ${PLAY_SOUNDS}
-    END
-
+    #Scroll to bottom
+    Execute JavaScript      window.scrollTo(0, document.body.scrollHeight);
+    Sleep   20s
+    #We could use element check for verifying that loading element is gone
+    #But this is being run on a very bad computer.
+    #Slow computer can't render or execute js fast enough to get news.
+    Wait Until Element Is Visible   ${data_stock_first_latest_news_skip_adverts}
+    ${text}=        Get Text    ${data_stock_first_latest_news_skip_adverts}
+    ${sentiment}=     Analyse Text Sentiment      ${SENTIMENT_MODEL_PATH}      ${text}
+    ${cropped_news_title}=       Truncate String     ${text}     255
     #Register news to database.
-    ${success}=     Run Keyword And Return Status      Execute Sql String   INSERT INTO ${SEARCH_DB} (SYMBOL, TYPE, NAME, PRICE, ADDED_TIME) VALUES ("${symbol}", "${type}", "${name}", ${price}, NOW());
+    ${SQL_for_inserting_news}=    Set Variable    INSERT INTO ${NEWS_DB} (TITLE, SENTIMENT, READ_TIME, StockID, Symbol) VALUES ('${cropped_news_title}', '${sentiment}', NOW(), ${stock_id}, '${SYMBOL}');
+    ${success}=     Run Keyword And Return Status      Execute Sql String   ${SQL_for_inserting_news}
     IF    ${success} == True
         Log To Console      Added ${symbol} to database
+        #Register news regardless of their sentiment, but warn of good news with sound fx. This activates only if its unique news.
+        IF  """${sentiment}""" != "good"
+            Play Sound File      ${CURDIR}//..//..//sounds//big_win.wav       ${PLAY_SOUNDS}
+        END
     ELSE
-         Log To Console    Could not add {symbol}, it's most likely a duplicate.
+         Log To Console    Could not add news, it's most likely a duplicate.
     END
-
-
 
 Train News Model
     [Documentation]     Trains a model to be used in these tests. Trains them using the data in news_data.py
-    train_text_sentiment_model        ${SENTIMENT_MODEL_PATH}
+    Train Text Sentiment Model        ${SENTIMENT_MODEL_PATH}
 
 Test News Model
     [Documentation]     This keyword checks that the model works on rudamentary level.
@@ -256,7 +227,26 @@ Test News Model
     IF  """${result}""" != """${expected_result}"""
         Fail    Testing news model failed. Unexpected result: ${result} should have been ${expected_result}
     END
-    #Log To Console    ${results}
+
+Clear All News From Database
+    [Documentation]     Deletes all rows of news.
+    Execute Sql String      TRUNCATE TABLE ${NEWS_DB}
+
+Iterate Through Interesting Stocks And Get Their Newest News
+    [Documentation]     This gets the list of interesting stocks registered earlier and gets their news.
+    ${result_list}=      Query      SELECT StockID, SYMBOL FROM ${SEARCH_DB};
+    ${results_length}       Get Length      ${result_list}
+    #Yahoo Get News For Stock        IAG     13
+    IF      ${results_length} > 0
+        FOR    ${row}    IN    @{result_list}
+            Log To Console   Now getting news for ${row[0]} AKA ${row[1]}
+            Yahoo Get News For Stock         ${row[1]}  ${row[0]}
+        END
+    ELSE
+        Log To Console      There was no interesting stocks which news to query.
+    END
+
+
 
 *** Test Cases ***
 Create Database Tables If They Dont Exist
@@ -273,32 +263,25 @@ Create Database Tables If They Dont Exist
     ${isEmpty}=     Is Json Empty   ${results}
     IF  ${isEmpty} == True
         Log To Console    Search database did not exist. Attempting to create it.
-        Query Json      CREATE TABLE ${NEWS_DB} (NewsID int, TITLE LONGTEXT, SENTIMENT varchar(15), RELEASED_TIME TIMESTAMP NOT NULL UNIQUE, PRIMARY KEY (NewsID), StockID int, FOREIGN KEY (StockID) REFERENCES ${SEARCH_DB}(StockID));
+        Query Json      CREATE TABLE ${NEWS_DB} (NewsID int NOT NULL AUTO_INCREMENT, TITLE varchar(255) UNIQUE NOT NULL, SENTIMENT varchar(15) NOT NULL, READ_TIME timestamp, PRIMARY KEY (NewsID), StockID int NOT NULL, Symbol varchar(10) NOT NULL, FOREIGN KEY (StockID) REFERENCES ${SEARCH_DB}(StockID));
     END
 
 
-
-#Find Interesting Stocks
-#    [Documentation]     Finds stocks which match defined interests and registers them in database.
-#    #robot --test "Find Interesting Stocks" .
-#
-#    Open Browser        ${PRIMARY_SOURCE_URL}       ${BROWSER}
-#    Yahoo Consent Checking Resolver
-#    Yahoo Find Interesting Stocks
-#    Print Out Interesting Stocks From Database
-
-
+Find Interesting Stocks
+    [Documentation]     Finds stocks which match defined interests and registers them in database.
+    #robot --test "Find Interesting Stocks" .
+    Open Browser        ${PRIMARY_SOURCE_URL}       ${BROWSER}
+    Yahoo Consent Checking Resolver
+    Yahoo Find Interesting Stocks
+    Print Out Interesting Stocks From Database
 
 
 Find Good News About Interesting Stocks
     [Documentation]     Searches for news about registered stocks which have good implications.
     #robot --test "Find Good News About Interesting Stocks" .
-
+    #Use the code below if you want to clear the db of news.
+    #Clear All News From Database
     #Test News Model
-
-    #${text}=        Set Variable        The 'smart' money is telling investors to be careful
-    #${results}=     Analyse Text Sentiment      ${CURDIR}/../models/test_model.dat      ${text}
-    #Log To Console    ${results}
-    #Open Browser        ${NEWS_SOURCE_URL}      ${BROWSER}
-    #Marketwatch Get News And Do Cycle
-    
+    Open Browser        ${NEWS_SOURCE_URL}      ${BROWSER}
+    Yahoo Consent Checking Resolver
+    Iterate Through Interesting Stocks And Get Their Newest News

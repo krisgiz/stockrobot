@@ -14,6 +14,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 import joblib
+from datetime import datetime
 
 #This downloads NLTK data files
 #nltk.download("punkt")
@@ -134,4 +135,7 @@ def Play_Sound_File(mp3, shouldPlay):
    if (shouldPlay == "True"):
        playsound(mp3)
 
-
+def convert_timestamp_to_mysql_timestring(timestamp):
+   timestamp = float(timestamp)
+   timestamp = timestamp//1000
+   return datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
